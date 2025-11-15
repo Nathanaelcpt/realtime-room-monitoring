@@ -14,16 +14,15 @@ export default defineConfig({
     },
   },
 
-  // ⬇️ Ini bagian penting supaya login.html dan halaman lain ikut kebuild
   build: {
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
         login: resolve(__dirname, 'login.html'),
-        dashboard: resolve(__dirname, 'dashboard.html'),
-        // Tambah lagi kalau punya file lain:
-        // register: resolve(__dirname, 'register.html'),
-      }
-    }
-  }
+        admin: resolve(__dirname, 'admin.html'),
+        register: resolve(__dirname, 'register.html'),
+        settings: resolve(__dirname, 'settings.html'),
+      },
+    },
+  },
 });
