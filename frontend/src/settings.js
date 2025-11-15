@@ -68,13 +68,30 @@ document.getElementById("btnUpdateName").onclick = async () => {
   });
 
   if (res.ok) {
-    msg.textContent = "Nama berhasil diperbarui!";
-    msg.style.color = "green";
-    loadProfile();
-  } else {
-    msg.textContent = "Gagal memperbarui nama";
-    msg.style.color = "red";
-  }
+  msg.textContent = "Nama berhasil diperbarui!";
+  msg.style.color = "green";
+
+  // Update navbar di halaman ini
+  loadProfile();
+
+  // Ambil user_id dari token
+  const payload = JSON.parse(atob(token.split(".")[1]));
+
+  // Update localStorage (biar tab ini langsung berubah)
+  localStorage.setItem("full_name", newName);
+
+  // Kirim WS event ke semua tab milik user ini
+  ws.send(JSON.stringify({
+    type: "notify_update_name",
+    user_id: payload.sub,
+    full_name: newName
+  }));
+
+} else {
+  msg.textContent = "Gagal memperbarui nama";
+  msg.style.color = "red";
+}
+
 };
 
 // --- Change Password ---
