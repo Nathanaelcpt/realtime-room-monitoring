@@ -2,7 +2,7 @@
 const API =
   window.location.hostname === "localhost"
     ? "http://localhost:8080"
-    : "https://your-railway-backend-url";
+    : "https://realtime-room-monitoring.onrender.com";
 
 // Check auth
 const token = localStorage.getItem("token");
@@ -126,7 +126,7 @@ window.updateStatus = async (id) => {
 const wsURL =
   window.location.hostname === "localhost"
     ? "ws://localhost:8080/ws"
-    : "wss://your-railway-backend-url/ws";
+    : "wss://realtime-room-monitoring.onrender.com/ws";
 
 const ws = new WebSocket(wsURL);
 

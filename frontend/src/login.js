@@ -6,7 +6,7 @@ const card = document.getElementById("loginCard");
 const API =
   window.location.hostname === "localhost"
     ? "http://localhost:8080"
-    : "https://your-railway-backend-url"; // ubah saat deploy
+    : "https://realtime-room-monitoring.onrender.com"; // ubah saat deploy
 
 btn.addEventListener("click", async () => {
   const username = document.getElementById("username").value.trim();

@@ -6,7 +6,7 @@ const card = document.getElementById("registerCard");
 const API =
   window.location.hostname === "localhost"
     ? "http://localhost:8080"
-    : "https://your-railway-backend-url"; // GANTI saat deploy
+    : "https://realtime-room-monitoring.onrender.com"; // GANTI saat deploy
 
 const token = localStorage.getItem("token");
 

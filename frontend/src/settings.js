@@ -25,7 +25,7 @@ function showConfirm(message) {
 const API =
   window.location.hostname === "localhost"
     ? "http://localhost:8080"
-    : "https://your-railway-backend-url"; // GANTI nanti
+    : "https://realtime-room-monitoring.onrender.com"; // GANTI nanti
 
 const token = localStorage.getItem("token");
 if (!token) window.location.href = "/login.html";
