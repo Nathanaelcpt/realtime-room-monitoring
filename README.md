@@ -45,7 +45,7 @@ Fitur utama:
 git clone https://github.com/Nathanaelcpt/realtime-room-monitoring.git
 cd realtime-room-monitoring
 
-🛠 Backend (Golang)
+## 🛠 Backend (Golang)
 ### 2️⃣ Buat file .env pada folder backend
 
 Isi sebagai berikut:
@@ -61,7 +61,7 @@ go run main.go
 Backend berjalan di:
 ➡️ http://localhost:8080
 
-🎨 Frontend (Vite)
+## 🎨 Frontend (Vite)
 ### 4️⃣ Masuk folder frontend
 cd frontend
 
@@ -97,12 +97,14 @@ Contoh Realtime Update:
 Lab Komputer A → Digunakan
 Langsung muncul di frontend user dalam < 1 detik
 
-### 🖼 Cuplikan Tampilan
+## 🖼 Cuplikan Tampilan
 ➡️ /screenshots/
 
-### 📂 Struktur Folder (Ringkas)
+## 📂 Struktur Folder (Ringkas)
 realtime-room-monitoring/
+
 │
+
 ├── backend/
 │   ├── main.go
 │   ├── database/
@@ -117,7 +119,7 @@ realtime-room-monitoring/
 │
 └── README.md
 
-### 📄 Keterangan
+## 📄 Keterangan
 
-Project ini dibuat untuk memenuhi tugas mata kuliah:
+Project ini dibuat untuk memenuhi tugas mata kuliah: 
 Pemrograman Jaringan – Universitas Katolik Darma Cendika, 2025
