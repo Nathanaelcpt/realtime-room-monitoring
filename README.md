@@ -13,7 +13,7 @@ User dapat melihat status ruangan, dan admin dapat mengelola ruangan melalui das
 | Nama                            | NIM          |
 |---------------------------------|--------------|
 | **Nathanael Christian Perkasa** | 213400010    |
-| **Maria Chatrin Bunaen**        | *(isi NIM lengkap di sini)* |
+| **Maria Chatrin Bunaen**        | 19340017     |
 
 ---
 
@@ -103,27 +103,6 @@ Langsung muncul di frontend user dalam < 1 detik
 
 ## 🖼 Cuplikan Tampilan
 ➡️ /screenshots/
-
----
-
-## 📂 Struktur Folder (Ringkas)
-realtime-room-monitoring/
-
-│
-
-├── backend/
-│   ├── main.go
-│   ├── database/
-│   ├── handlers/
-│   ├── middleware/
-│   └── websocket/
-│
-├── frontend/
-│   ├── index.html
-│   ├── src/
-│   └── dist/
-│
-└── README.md
 
 ---
 
