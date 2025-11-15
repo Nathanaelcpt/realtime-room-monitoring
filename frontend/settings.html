@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pengaturan Akun - RoomWatch</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script type="module" src="/src/settings.js"></script>
+
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      background: linear-gradient(135deg, #e0e7ff, #f0f9ff);
+      min-height: 100vh;
+      padding-top: 90px;
+    }
+
+    /* NAVBAR STYLE */
+    .nav-custom {
+      background: linear-gradient(90deg, #4f46e5, #7c3aed);
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* CARD GLASS */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(10px);
+      border-radius: 18px;
+      padding: 25px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+      margin-bottom: 30px;
+      animation: fadeIn .5s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(15px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .btn-gradient {
+      background: linear-gradient(90deg, #4f46e5, #7c3aed);
+      border: none;
+      color: white;
+      font-weight: 600;
+      border-radius: 10px;
+      padding: 10px;
+      transition: .25s ease;
+    }
+
+    .btn-gradient:hover {
+      opacity: .88;
+      transform: scale(.97);
+    }
+
+    .danger-btn {
+      background: linear-gradient(90deg, #dc2626, #ef4444);
+      border: none;
+      color: white;
+      font-weight: 600;
+      border-radius: 10px;
+      padding: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark nav-custom fixed-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="/admin.html">RoomWatch Admin</a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navSetting">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navSetting">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item"><a class="nav-link fw-semibold" href="/admin.html">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link fw-semibold" href="/register.html">Tambah Akun</a></li>
+          <li class="nav-item"><a class="nav-link active fw-semibold" href="/settings.html">Pengaturan</a></li>
+        </ul>
+
+        <span id="userHello" class="text-white fw-semibold me-3"></span>
+
+        <button id="logoutBtn" class="btn btn-light btn-sm fw-semibold">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <!-- PROFILE SECTION -->
+    <div class="glass-card">
+      <h4 class="fw-bold mb-3">Profil Admin</h4>
+
+      <p><b>Username:</b> <span id="profUsername"></span></p>
+      <p><b>Nama lengkap:</b> <span id="profName"></span></p>
+    </div>
+
+    <!-- UPDATE NAME -->
+    <div class="glass-card">
+      <h4 class="fw-bold mb-3">Ubah Nama Lengkap</h4>
+      <input id="newName" type="text" class="form-control mb-3" placeholder="Nama lengkap baru">
+      <button id="btnUpdateName" class="btn-gradient w-100">Simpan</button>
+      <div id="nameMsg" class="text-center mt-2 fw-semibold"></div>
+    </div>
+
+    <!-- CHANGE PASSWORD -->
+    <div class="glass-card">
+      <h4 class="fw-bold mb-3">Ubah Password</h4>
+
+      <input id="oldPass" type="password" class="form-control mb-2" placeholder="Password lama">
+      <input id="newPass" type="password" class="form-control mb-2" placeholder="Password baru">
+      <input id="confPass" type="password" class="form-control mb-3" placeholder="Konfirmasi password baru">
+
+      <button id="btnChangePass" class="btn-gradient w-100">Ubah Password</button>
+      <div id="passMsg" class="text-center mt-2 fw-semibold"></div>
+    </div>
+
+    <!-- DELETE ACCOUNT -->
+    <div class="glass-card">
+      <h4 class="fw-bold mb-3 text-danger">Hapus Akun</h4>
+      <p class="text-danger">Setelah dihapus, akun tidak bisa dipulihkan.</p>
+      <button id="btnDelete" class="danger-btn w-100">Hapus Akun Saya</button>
+      <div id="delMsg" class="text-center mt-2 fw-semibold"></div>
+    </div>
+
+    <!-- LOGIN ACTIVITIES -->
+    <div class="glass-card">
+      <h4 class="fw-bold mb-3">Riwayat Login</h4>
+      <table class="table table-sm table-striped">
+        <thead>
+          <tr>
+            <th>Waktu</th>
+            <th>IP</th>
+            <th>User Agent</th>
+          </tr>
+        </thead>
+
+        <tbody id="actTable"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- POPUP KONFIRMASI -->
+<div id="confirmPopup" class="confirm-popup">
+  <div class="confirm-box">
+    <p id="confirmText" class="mb-3 fw-semibold">Yakin?</p>
+    <div class="d-flex justify-content-center gap-3">
+      <button id="confirmYes" class="btn btn-danger px-4 fw-semibold">Ya</button>
+      <button id="confirmNo" class="btn btn-secondary px-4 fw-semibold">Batal</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .confirm-popup {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    visibility: hidden;
+    opacity: 0;
+    transition: .25s ease;
+    z-index: 9999;
+  }
+
+  .confirm-box {
+    background: #fff;
+    padding: 28px 34px;
+    border-radius: 18px;
+    width: 360px;
+    text-align: center;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    transform: scale(0.85);
+    transition: .25s ease;
+    font-family: "Inter", sans-serif;
+  }
+
+  .confirm-popup.show {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .confirm-popup.show .confirm-box {
+    transform: scale(1);
+  }
+</style>
+
+</body>
+</html>

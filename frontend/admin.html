@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard Admin - RoomWatch</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script type="module" src="/src/admin.js"></script>
+
+  <style>
+    body {
+      background: linear-gradient(135deg, #e0e7ff, #f0f9ff);
+      font-family: "Inter", sans-serif;
+      min-height: 100vh;
+    }
+
+    /* NAVBAR */
+    .nav-custom {
+      background: linear-gradient(90deg, #4338ca, #6366f1);
+      box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+    }
+
+    .nav-username {
+      color: #e0e7ff;
+      font-weight: 500;
+      margin-right: 15px;
+    }
+
+    /* CARD */
+    .room-card {
+      border-radius: 16px;
+      background: #ffffffdd;
+      backdrop-filter: blur(10px);
+      transition: all .25s ease;
+      border: 1px solid #e5e7eb;
+    }
+
+    .room-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    }
+
+    .btn-gradient {
+      background: linear-gradient(90deg, #4f46e5, #7c3aed);
+      border: none;
+      color: white;
+      font-weight: 600;
+      transition: .2s;
+    }
+
+    .btn-gradient:hover {
+      opacity: .88;
+      transform: scale(.97);
+    }
+
+    /* POPUP */
+    #notifPopup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      background: white;
+      padding: 26px 40px;
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all .3s ease;
+      z-index: 4000;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark nav-custom py-2">
+  <div class="container">
+
+    <a class="navbar-brand fw-bold" href="/admin.html">RoomWatch Admin</a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navAdmin">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navAdmin">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link active fw-semibold" href="/admin.html">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link fw-semibold" href="/register.html">Tambah Akun</a>
+        </li>
+      </ul>
+
+      <!-- Nama User -->
+      <span id="activeUser" class="nav-username d-none"></span>
+
+      <a href="/settings.html" class="btn btn-light btn-sm fw-semibold me-2">
+        Pengaturan Akun
+      </a>
+
+      <button id="logoutBtn" class="btn btn-outline-light btn-sm fw-semibold px-3">
+        Logout
+      </button>
+    </div>
+
+  </div>
+</nav>
+
+
+
+<!-- CONTENT -->
+<div class="container mt-4">
+  <h2 class="text-center fw-bold mb-4" style="color:#312e81;">Kelola Status Ruangan</h2>
+
+  <div id="roomList" class="row g-4">
+    <!-- Cards injected by admin.js -->
+  </div>
+</div>
+
+
+<!-- POPUP -->
+<div id="notifPopup">
+  <span id="notifMessage">Status berhasil diperbarui!</span>
+</div>
+
+</body>
+</html>
