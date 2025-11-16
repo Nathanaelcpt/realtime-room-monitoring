@@ -104,10 +104,10 @@ Langsung muncul di frontend user dalam < 1 detik
 ## 🖼 Cuplikan Tampilan
 ➡️ 
 ### User Page
-![Login Page](./screenshot/tampilanuser.png)
+![Login Page](./screenshots/tampilanuser.png)
 
 ### Dashboard Admin
-![Dashboard](./screenshot/tampilanadmin.png)
+![Dashboard](./screenshots/tampilanadmin.png)
 
 ---
 
