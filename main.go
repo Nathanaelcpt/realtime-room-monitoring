@@ -29,11 +29,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-//
 // ============================
 //   VARIABEL GLOBAL SERVER
 // ============================
-//
 
 var (
 	db        *sql.DB  // Menyimpan koneksi database global
@@ -55,12 +53,9 @@ var (
 	clients = map[*Client]bool{}
 )
 
-
-//
 // ===========================================
 //   STRUCT UNTUK WEBSOCKET DAN DATA DATABASE
 // ===========================================
-//
 
 // Client merepresentasikan 1 koneksi WebSocket
 type Client struct {
@@ -83,12 +78,9 @@ type User struct {
 	FullName string `json:"full_name"`
 }
 
-
-//
 // ============================
 //       FUNGSI BANTUAN
 // ============================
-//
 
 // Mengambil environment variable,
 // jika kosong maka menggunakan fallback
@@ -114,12 +106,9 @@ func respondError(w http.ResponseWriter, code int, msg string) {
 	respondJSON(w, code, map[string]string{"error": msg})
 }
 
-
-//
 // ============================
 //              CORS
 // ============================
-//
 
 // Middleware CORS untuk mengizinkan frontend mengakses API ini
 func withCORS(next http.Handler) http.Handler {
@@ -145,12 +134,10 @@ func withCORS(next http.Handler) http.Handler {
 	})
 }
 
-//
 // ============================
 //        BAGIAN JWT
 //   Membuat & memvalidasi token
 // ============================
-//
 
 // Fungsi untuk membuat JWT saat user berhasil login
 func makeJWT(username, fullName string) (string, error) {
@@ -224,12 +211,9 @@ func requireAuth(next http.HandlerFunc) http.Handler {
 	})
 }
 
-
-//
 // =====================================
 //          INISIALISASI DATABASE
 // =====================================
-//
 
 // Menghubungkan server ke PostgreSQL dan memastikan tabel tersedia
 func initDB(ctx context.Context) error {
@@ -295,9 +279,7 @@ CREATE TABLE IF NOT EXISTS login_activities (
 	_, _ = db.ExecContext(ctx,
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name TEXT;`)
 
-	//
 	// SEEDING USER ADMIN
-	//
 
 	var count int
 	_ = db.QueryRowContext(ctx,
@@ -316,9 +298,7 @@ CREATE TABLE IF NOT EXISTS login_activities (
 		log.Println("Seeded default admin: admin/admin123")
 	}
 
-	//
 	// SEEDING DATA RUANGAN
-	//
 
 	_ = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM rooms`).Scan(&count)
 
@@ -339,13 +319,10 @@ INSERT INTO rooms (name, status) VALUES
 	return nil
 }
 
-
-//
 // ============================
 //           QUERIES
 //  Fungsi untuk mengambil/mengubah data
 // ============================
-//
 
 // Mengambil seluruh data ruangan
 func getAllRooms(ctx context.Context) ([]Room, error) {
@@ -387,12 +364,10 @@ func findUser(ctx context.Context, username string) (*User, error) {
 	return &u, err
 }
 
-//
 // ======================================
 //          HANDLER UNTUK AUTH
 //      Login, Profil, dll.
 // ======================================
-//
 
 // Handler untuk melakukan login
 // Mengembalikan JWT jika username & password benar
@@ -636,12 +611,9 @@ func handleActivities(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, out)
 }
 
-
-//
 // ======================================
 //          HANDLER UNTUK ROOMS
 // ======================================
-//
 
 // Mengambil seluruh ruangan (public)
 func handleRooms(w http.ResponseWriter, r *http.Request) {
@@ -675,12 +647,10 @@ func handleUpdateRoom(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]string{"message": "updated"})
 }
 
-//
 // =========================================
 //           HANDLER UNTUK WEBSOCKET
 //    Mengelola koneksi realtime antar client
 // =========================================
-//
 
 func handleWS(w http.ResponseWriter, r *http.Request) {
 
@@ -739,12 +709,9 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
-//
 // =========================================
 //    FUNGSI PENDUKUNG UNTUK WEBSOCKET
 // =========================================
-//
 
 // Mengirim snapshot (data lengkap) ruangan ke 1 client saja
 func writeRoomsSnapshot(ctx context.Context, conn *websocket.Conn) {
@@ -792,12 +759,9 @@ func broadcastProfileUpdate(userID, newName string) {
 	}
 }
 
-
-//
 // =========================================
 //         FUNGSI UTIL MENENTUKAN IP
 // =========================================
-//
 
 // Mengambil IP asli client, baik direct maupun lewat proxy seperti Vercel
 func readIP(r *http.Request) string {
@@ -818,12 +782,9 @@ func readIP(r *http.Request) string {
 	return host
 }
 
-
-//
 // =========================================
 //           FUNGSI main() SERVER
 // =========================================
-//
 
 func main() {
 
@@ -853,9 +814,7 @@ func main() {
 	mux.HandleFunc("/rooms", handleRooms)
 	mux.HandleFunc("/ws", handleWS)
 
-	//
 	// ROUTE PROTECTED (HARUS PAKAI JWT)
-	//
 	mux.Handle("/me", requireAuth(handleMe))
 	mux.Handle("/register", requireAuth(handleRegister))
 	mux.Handle("/update-name", requireAuth(handleUpdateName))

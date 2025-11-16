@@ -102,7 +102,12 @@ Langsung muncul di frontend user dalam < 1 detik
 ---
 
 ## 🖼 Cuplikan Tampilan
-➡️ /screenshots/
+➡️ 
+### User Page
+![Login Page](./screenshot/tampilanuser.png)
+
+### Dashboard Admin
+![Dashboard](./screenshot/tampilanadmin.png)
 
 ---
 
