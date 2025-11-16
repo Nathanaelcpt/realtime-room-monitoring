@@ -31,10 +31,20 @@ var (
 	}
 
 	clientsMu sync.Mutex
-	clients   = map[*websocket.Conn]bool{}
+
+	// CLIENT STRUCT BARU
+	clients = map[*Client]bool{}
 )
 
-// MODELS
+// ====================
+// CLIENT UNTUK WS
+// ====================
+type Client struct {
+	conn   *websocket.Conn
+	userID string // user_id dari JWT (sub)
+}
+
+// MODELS ==============================
 
 type Room struct {
 	ID     int64  `json:"id"`
@@ -49,7 +59,7 @@ type User struct {
 	FullName string `json:"full_name"`
 }
 
-// HELPERS
+// HELPERS ==============================
 
 func mustGetEnv(key, fallback string) string {
 	val := os.Getenv(key)
@@ -71,11 +81,10 @@ func respondError(w http.ResponseWriter, code int, msg string) {
 	respondJSON(w, code, map[string]string{"error": msg})
 }
 
-// CORS
+// CORS =================================
 
 func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Simple permissive CORS for demo; tighten in prod if needed
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
@@ -87,7 +96,7 @@ func withCORS(next http.Handler) http.Handler {
 	})
 }
 
-// JWT
+// JWT ==================================
 
 func makeJWT(username, fullName string) (string, error) {
 	claims := jwt.MapClaims{
@@ -101,7 +110,6 @@ func makeJWT(username, fullName string) (string, error) {
 	return token.SignedString(jwtSecret)
 }
 
-// parseJWT returns username and full_name
 func parseJWTFromRequest(r *http.Request) (string, string, error) {
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
@@ -113,7 +121,6 @@ func parseJWTFromRequest(r *http.Request) (string, string, error) {
 	}
 	tokStr := parts[1]
 	tok, err := jwt.Parse(tokStr, func(token *jwt.Token) (interface{}, error) {
-		// ensure HMAC
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
@@ -141,14 +148,14 @@ func requireAuth(next http.HandlerFunc) http.Handler {
 	})
 }
 
-// DATABASE INIT / MIGRATIONS
+// DATABASE INIT ========================
 
 func initDB(ctx context.Context) error {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
 		return errors.New("DATABASE_URL not set")
 	}
-	// Ensure sslmode=require for cloud Postgres if not present
+
 	if !strings.Contains(dsn, "sslmode") {
 		if strings.Contains(dsn, "?") {
 			dsn = dsn + "&sslmode=require"
@@ -172,8 +179,6 @@ func initDB(ctx context.Context) error {
 
 	log.Println("Connected to DB")
 
-	// Create tables if not exist; add full_name column if missing; create activities table
-	// Use idempotent statements
 	_, err = db.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS users (
 	id SERIAL PRIMARY KEY,
@@ -197,31 +202,29 @@ CREATE TABLE IF NOT EXISTS login_activities (
 		return err
 	}
 
-	// Add full_name column if missing (Postgres supports IF NOT EXISTS for columns in newer versions,
-	// but to be safe, try ALTER ... ADD COLUMN IF NOT EXISTS)
 	_, _ = db.ExecContext(ctx, `ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name TEXT;`)
 
-	// Seed admin with full_name if not exists
 	var count int
 	_ = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM users WHERE username='admin'`).Scan(&count)
 	if count == 0 {
 		hashed, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
-		_, err = db.ExecContext(ctx, `INSERT INTO users (username, password, full_name) VALUES ($1,$2,$3)`, "admin", string(hashed), "Administrator")
+		_, err = db.ExecContext(ctx,
+			`INSERT INTO users (username, password, full_name) VALUES ($1,$2,$3)`,
+			"admin", string(hashed), "Administrator")
 		if err != nil {
 			return err
 		}
-		log.Println("Seeded default admin: admin / admin123 (Administrator)")
+		log.Println("Seeded default admin: admin/admin123")
 	}
 
-	// Seed rooms if empty
 	_ = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM rooms`).Scan(&count)
 	if count == 0 {
 		_, err = db.ExecContext(ctx, `
-		INSERT INTO rooms (name, status) VALUES
-		('Lab Komputer A','Tersedia'),
-		('Lab Komputer B','Digunakan'),
-		('Ruang Multimedia','Dipesan')
-		`)
+INSERT INTO rooms (name, status) VALUES
+('Lab Komputer A','Tersedia'),
+('Lab Komputer B','Digunakan'),
+('Ruang Multimedia','Dipesan')
+`)
 		if err != nil {
 			return err
 		}
@@ -231,7 +234,7 @@ CREATE TABLE IF NOT EXISTS login_activities (
 	return nil
 }
 
-// QUERIES
+// QUERIES ==============================
 
 func getAllRooms(ctx context.Context) ([]Room, error) {
 	rows, err := db.QueryContext(ctx, `SELECT id, name, status FROM rooms ORDER BY id ASC`)
@@ -239,34 +242,34 @@ func getAllRooms(ctx context.Context) ([]Room, error) {
 		return nil, err
 	}
 	defer rows.Close()
+
 	var out []Room
 	for rows.Next() {
 		var r Room
-		if err := rows.Scan(&r.ID, &r.Name, &r.Status); err != nil {
-			return nil, err
-		}
+		rows.Scan(&r.ID, &r.Name, &r.Status)
 		out = append(out, r)
 	}
 	return out, nil
 }
 
 func updateRoomStatus(ctx context.Context, id int64, newStatus string) error {
-	_, err := db.ExecContext(ctx, `UPDATE rooms SET status=$1 WHERE id=$2`, newStatus, id)
+	_, err := db.ExecContext(ctx,
+		`UPDATE rooms SET status=$1 WHERE id=$2`, newStatus, id)
 	return err
 }
 
 func findUser(ctx context.Context, username string) (*User, error) {
-	row := db.QueryRowContext(ctx, `SELECT id, username, password, full_name FROM users WHERE username=$1`, username)
+	row := db.QueryRowContext(ctx,
+		`SELECT id, username, password, full_name FROM users WHERE username=$1`, username)
+
 	var u User
-	if err := row.Scan(&u.ID, &u.Username, &u.Password, &u.FullName); err != nil {
-		return nil, err
-	}
-	return &u, nil
+	err := row.Scan(&u.ID, &u.Username, &u.Password, &u.FullName)
+	return &u, err
 }
 
-// HANDLERS
+// HANDLERS =============================
 
-// POST /login { username, password }
+// POST /login
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Username string `json:"username"`
@@ -276,77 +279,83 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
+
 	u, err := findUser(r.Context(), body.Username)
-	if err != nil {
-		respondError(w, http.StatusUnauthorized, "invalid credentials")
-		return
-	}
-	if bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(body.Password)) != nil {
+	if err != nil || bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(body.Password)) != nil {
 		respondError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 
-	// create JWT containing full_name as well
 	token, err := makeJWT(u.Username, u.FullName)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "token error")
 		return
 	}
 
-	// record login activity (non-blocking)
 	go func() {
 		ip := readIP(r)
 		ua := r.UserAgent()
-		_, _ = db.ExecContext(context.Background(), `INSERT INTO login_activities (username, ip, user_agent) VALUES ($1,$2,$3)`, u.Username, ip, ua)
+		db.ExecContext(context.Background(),
+			`INSERT INTO login_activities (username, ip, user_agent) VALUES ($1,$2,$3)`,
+			u.Username, ip, ua)
 	}()
 
 	respondJSON(w, http.StatusOK, map[string]string{"token": token})
 }
 
-// GET /me  (auth) -> returns { username, full_name }
+// GET /me
 func handleMe(w http.ResponseWriter, r *http.Request) {
 	username, fullName, err := parseJWTFromRequest(r)
 	if err != nil {
 		respondError(w, http.StatusUnauthorized, "invalid token")
 		return
 	}
-	respondJSON(w, http.StatusOK, map[string]string{"username": username, "full_name": fullName})
+	respondJSON(w, http.StatusOK, map[string]string{
+		"username":  username,
+		"full_name": fullName,
+	})
 }
 
-// POST /register { username, password, full_name } (auth: admin)
+// POST /register
 func handleRegister(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 		FullName string `json:"full_name"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	if json.NewDecoder(r.Body).Decode(&body) != nil {
 		respondError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
+
 	if strings.TrimSpace(body.Username) == "" || strings.TrimSpace(body.Password) == "" {
 		respondError(w, http.StatusBadRequest, "username/password required")
 		return
 	}
-	// check duplicate
+
 	var count int
-	if err := db.QueryRowContext(r.Context(), `SELECT COUNT(*) FROM users WHERE username=$1`, body.Username).Scan(&count); err != nil {
-		respondError(w, http.StatusInternalServerError, "db error")
-		return
-	}
+	db.QueryRowContext(r.Context(),
+		`SELECT COUNT(*) FROM users WHERE username=$1`, body.Username).Scan(&count)
+
 	if count > 0 {
-		respondError(w, http.StatusBadRequest, "username already exists")
+		respondError(w, http.StatusBadRequest, "username exists")
 		return
 	}
+
 	hashed, _ := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
-	if _, err := db.ExecContext(r.Context(), `INSERT INTO users (username, password, full_name) VALUES ($1,$2,$3)`, body.Username, string(hashed), body.FullName); err != nil {
+	_, err := db.ExecContext(r.Context(),
+		`INSERT INTO users (username, password, full_name) VALUES ($1,$2,$3)`,
+		body.Username, string(hashed), body.FullName)
+
+	if err != nil {
 		respondError(w, http.StatusInternalServerError, "db error")
 		return
 	}
+
 	respondJSON(w, http.StatusOK, map[string]string{"message": "registered"})
 }
 
-// POST /update-name { full_name } (auth: self)
+// POST /update-name
 func handleUpdateName(w http.ResponseWriter, r *http.Request) {
 	username, _, err := parseJWTFromRequest(r)
 	if err != nil {
@@ -356,18 +365,24 @@ func handleUpdateName(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		FullName string `json:"full_name"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	if json.NewDecoder(r.Body).Decode(&body) != nil {
 		respondError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-	if _, err := db.ExecContext(r.Context(), `UPDATE users SET full_name=$1 WHERE username=$2`, body.FullName, username); err != nil {
+
+	_, err = db.ExecContext(r.Context(),
+		`UPDATE users SET full_name=$1 WHERE username=$2`,
+		body.FullName, username)
+
+	if err != nil {
 		respondError(w, http.StatusInternalServerError, "db error")
 		return
 	}
+
 	respondJSON(w, http.StatusOK, map[string]string{"message": "name updated"})
 }
 
-// POST /change-password { old_password, new_password } (auth self)
+// POST /change-password
 func handleChangePassword(w http.ResponseWriter, r *http.Request) {
 	username, _, err := parseJWTFromRequest(r)
 	if err != nil {
@@ -378,51 +393,64 @@ func handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		OldPassword string `json:"old_password"`
 		NewPassword string `json:"new_password"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid json")
-		return
-	}
-	// verify old password
+	json.NewDecoder(r.Body).Decode(&body)
+
 	u, err := findUser(r.Context(), username)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "db error")
 		return
 	}
+
 	if bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(body.OldPassword)) != nil {
-		respondError(w, http.StatusBadRequest, "old password incorrect")
+		respondError(w, http.StatusBadRequest, "wrong old password")
 		return
 	}
+
 	hashed, _ := bcrypt.GenerateFromPassword([]byte(body.NewPassword), bcrypt.DefaultCost)
-	if _, err := db.ExecContext(r.Context(), `UPDATE users SET password=$1 WHERE username=$2`, string(hashed), username); err != nil {
+	_, err = db.ExecContext(r.Context(),
+		`UPDATE users SET password=$1 WHERE username=$2`,
+		string(hashed), username)
+
+	if err != nil {
 		respondError(w, http.StatusInternalServerError, "db error")
 		return
 	}
+
 	respondJSON(w, http.StatusOK, map[string]string{"message": "password changed"})
 }
 
-// DELETE /delete-account (auth self) — deletes current user
+// DELETE /delete-account
 func handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
 	username, _, err := parseJWTFromRequest(r)
 	if err != nil {
 		respondError(w, http.StatusUnauthorized, "invalid token")
 		return
 	}
-	// delete user
-	if _, err := db.ExecContext(r.Context(), `DELETE FROM users WHERE username=$1`, username); err != nil {
+	_, err = db.ExecContext(r.Context(),
+		`DELETE FROM users WHERE username=$1`, username)
+
+	if err != nil {
 		respondError(w, http.StatusInternalServerError, "db error")
 		return
 	}
 	respondJSON(w, http.StatusOK, map[string]string{"message": "account deleted"})
 }
 
-// GET /activities (auth) — returns login activities for current user
+// GET /activities
 func handleActivities(w http.ResponseWriter, r *http.Request) {
 	username, _, err := parseJWTFromRequest(r)
 	if err != nil {
 		respondError(w, http.StatusUnauthorized, "invalid token")
 		return
 	}
-	rows, err := db.QueryContext(r.Context(), `SELECT id, created_at, ip, user_agent FROM login_activities WHERE username=$1 ORDER BY created_at DESC LIMIT 50`, username)
+
+	rows, err := db.QueryContext(r.Context(),
+		`SELECT id, created_at, ip, user_agent
+		   FROM login_activities
+		  WHERE username=$1
+		  ORDER BY created_at DESC
+		  LIMIT 50`, username)
+
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "db error")
 		return
@@ -435,19 +463,18 @@ func handleActivities(w http.ResponseWriter, r *http.Request) {
 		IP        string    `json:"ip"`
 		UserAgent string    `json:"user_agent"`
 	}
+
 	var out []act
 	for rows.Next() {
 		var a act
-		if err := rows.Scan(&a.ID, &a.CreatedAt, &a.IP, &a.UserAgent); err != nil {
-			respondError(w, http.StatusInternalServerError, "db error")
-			return
-		}
+		rows.Scan(&a.ID, &a.CreatedAt, &a.IP, &a.UserAgent)
 		out = append(out, a)
 	}
+
 	respondJSON(w, http.StatusOK, out)
 }
 
-// ROOMS & WS (unchanged)
+// ROOMS =================================
 
 func handleRooms(w http.ResponseWriter, r *http.Request) {
 	rooms, err := getAllRooms(r.Context())
@@ -465,17 +492,18 @@ func handleUpdateRoom(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
 
-	if body.Status != "Tersedia" && body.Status != "Digunakan" && body.Status != "Dipesan" {
-		respondError(w, http.StatusBadRequest, "invalid status")
-		return
-	}
 	if err := updateRoomStatus(r.Context(), body.ID, body.Status); err != nil {
 		respondError(w, http.StatusInternalServerError, "db error")
 		return
 	}
+
 	broadcastRooms(r.Context())
 	respondJSON(w, http.StatusOK, map[string]string{"message": "updated"})
 }
+
+// ========================
+//   HANDLE WS (BARU)
+// ========================
 
 func handleWS(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -483,30 +511,58 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 		log.Println("ws upgrade:", err)
 		return
 	}
-	defer conn.Close()
+
+	client := &Client{conn: conn}
 
 	clientsMu.Lock()
-	clients[conn] = true
+	clients[client] = true
 	clientsMu.Unlock()
 
-	// send snapshot
+	// Kirim snapshot ruangan saat pertama connect
 	writeRoomsSnapshot(r.Context(), conn)
 
 	for {
-		if _, _, err := conn.ReadMessage(); err != nil {
+		_, data, err := conn.ReadMessage()
+		if err != nil {
 			clientsMu.Lock()
-			delete(clients, conn)
+			delete(clients, client)
 			clientsMu.Unlock()
+			conn.Close()
 			return
+		}
+
+		var msg map[string]any
+		if json.Unmarshal(data, &msg) != nil {
+			continue
+		}
+
+		// CLIENT AUTH: set user_id
+		if msg["type"] == "auth" {
+			if uid, ok := msg["user_id"].(string); ok {
+				client.userID = uid
+			}
+			continue
+		}
+
+		// PROFILE UPDATE BROADCAST
+		if msg["type"] == "notify_update_name" {
+			fullName := msg["full_name"].(string)
+			uid := msg["user_id"].(string)
+			broadcastProfileUpdate(uid, fullName)
+			continue
 		}
 	}
 }
 
+// SNAPSHOT ROOMS ========================
+
 func writeRoomsSnapshot(ctx context.Context, conn *websocket.Conn) {
 	rooms, _ := getAllRooms(ctx)
 	b, _ := json.Marshal(map[string]any{"rooms": rooms})
-	_ = conn.WriteMessage(websocket.TextMessage, b)
+	conn.WriteMessage(websocket.TextMessage, b)
 }
+
+// BROADCAST ROOMS =======================
 
 func broadcastRooms(ctx context.Context) {
 	rooms, _ := getAllRooms(ctx)
@@ -516,23 +572,40 @@ func broadcastRooms(ctx context.Context) {
 	defer clientsMu.Unlock()
 
 	for c := range clients {
-		if err := c.WriteMessage(websocket.TextMessage, b); err != nil {
-			_ = c.Close()
+		if err := c.conn.WriteMessage(websocket.TextMessage, b); err != nil {
+			c.conn.Close()
 			delete(clients, c)
 		}
 	}
 }
 
-// UTIL: read client IP (X-Forwarded-For fallback)
+// BROADCAST PROFILE NAME ================
+
+func broadcastProfileUpdate(userID, newName string) {
+	b, _ := json.Marshal(map[string]any{
+		"type":      "profile_update",
+		"full_name": newName,
+	})
+
+	clientsMu.Lock()
+	defer clientsMu.Unlock()
+
+	for c := range clients {
+		if c.userID == userID {
+			c.conn.WriteMessage(websocket.TextMessage, b)
+		}
+	}
+}
+
+// UTIL ================================
 
 func readIP(r *http.Request) string {
-	// check X-Forwarded-For first (proxy)
 	xff := r.Header.Get("X-Forwarded-For")
 	if xff != "" {
 		parts := strings.Split(xff, ",")
 		return strings.TrimSpace(parts[0])
 	}
-	// fallback to RemoteAddr
+
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return r.RemoteAddr
@@ -540,10 +613,10 @@ func readIP(r *http.Request) string {
 	return host
 }
 
-// MAIN
+// MAIN =================================
 
 func main() {
-	_ = godotenv.Load()
+	godotenv.Load()
 
 	jwtSecret = []byte(mustGetEnv("JWT_SECRET", "dev_secret"))
 	if p := os.Getenv("PORT"); p != "" {
@@ -556,12 +629,12 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	// auth-free
+	// Public
 	mux.HandleFunc("/login", handleLogin)
 	mux.HandleFunc("/rooms", handleRooms)
 	mux.HandleFunc("/ws", handleWS)
 
-	// protected
+	// Protected
 	mux.Handle("/me", requireAuth(handleMe))
 	mux.Handle("/register", requireAuth(handleRegister))
 	mux.Handle("/update-name", requireAuth(handleUpdateName))

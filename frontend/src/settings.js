@@ -68,29 +68,29 @@ document.getElementById("btnUpdateName").onclick = async () => {
   });
 
   if (res.ok) {
-  msg.textContent = "Nama berhasil diperbarui!";
-  msg.style.color = "green";
+    msg.textContent = "Nama berhasil diperbarui!";
+    msg.style.color = "green";
 
-  // Update navbar di halaman ini
-  loadProfile();
+    // 1. Update halaman ini langsung
+    document.getElementById("profName").textContent = newName;
+    const hello = document.getElementById("userHello");
+    if (hello) hello.textContent = `Halo, ${newName}`;
 
-  // Ambil user_id dari token
-  const payload = JSON.parse(atob(token.split(".")[1]));
+    // 2. Update local storage (dipakai navbar halaman lain)
+    localStorage.setItem("full_name", newName);
 
-  // Update localStorage (biar tab ini langsung berubah)
-  localStorage.setItem("full_name", newName);
+    // 3. Kirim event WebSocket ke tab lain
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    ws.send(JSON.stringify({
+        type: "notify_update_name",
+        user_id: payload.sub,
+        full_name: newName
+    }));
 
-  // Kirim WS event ke semua tab milik user ini
-  ws.send(JSON.stringify({
-    type: "notify_update_name",
-    user_id: payload.sub,
-    full_name: newName
-  }));
-
-} else {
-  msg.textContent = "Gagal memperbarui nama";
-  msg.style.color = "red";
+    // 4. (Opsional) refresh data lain dari server
+    // loadProfile();
 }
+
 
 };
 
