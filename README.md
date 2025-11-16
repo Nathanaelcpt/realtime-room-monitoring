@@ -13,7 +13,7 @@ User dapat melihat status ruangan, dan admin dapat mengelola ruangan melalui das
 | Nama                            | NIM          |
 |---------------------------------|--------------|
 | **Nathanael Christian Perkasa** | 213400010    |
-| **Maria Chatrin Bunaen**        | 19340017     |
+| **Maria Chatrin Bunaen**        | 193400017    |
 
 ---
 
